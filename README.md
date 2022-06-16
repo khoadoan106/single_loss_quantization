@@ -17,15 +17,15 @@ Clone the repository. The setup script to initialize and activate the environmen
 * `README.md`: this doc, and light documentation of this repos.
 
 ## Using Original Deep Hashing Methods
-* CIFAR10
+* CIFAR10:
         ```
         nohup python python/HashNet.py --dataset cifar10 --data_root data/ --random_seed 9 --bit_list 16 32 64 128 --model AlexNet --epochs 200 --optimizer adam --lr 1e-5 --test_every 10  --save_path experiments/HashNet/cifar10_AlexNet_b64_adam  2>&1 >experiments/logs/HashNet-r9-cifar10_AlexNet_b64_adam.log &	
         ```
-* COCO
+* COCO:
         ```
         nohup python python/HashNet.py --dataset coco --data_root data/ --random_seed 9 --bit_list 16 32 64 128 --model AlexNet --epochs 200 --optimizer adam --lr 1e-5 --test_every 10  --save_path experiments/HashNet/coco_AlexNet_b64_adam  2>&1 >experiments/logs/HashNet-r9-coco_AlexNet_b64_adam.log &	
         ```
-* NUS-WIDE
+* NUS-WIDE:
         ```
         nohup python python/HashNet.py --dataset coco --data_root data/ --random_seed 9 --bit_list 16 32 64 128 --model AlexNet --epochs 200 --optimizer adam --lr 1e-5 --test_every 10  --save_path experiments/HashNet/nuswide_21_AlexNet_b64_adam  2>&1 >experiments/logs/HashNet-r9-nuswide_21_AlexNet_b64_adam.log &	
         ```   
@@ -39,16 +39,16 @@ Doan et al. One Loss for Quantization: Deep Hashing with Discrete Wasserstein Di
 
 * This repository supports various quantization losses discussed in Doan et al. For HSWD, use `--quantization_type swdC`; for SWD, use `--quantization_type swd`; we also support Optimal Transport estimation using `--quantization_type ot`.
     
-* CIFAR10
+* CIFAR10:
         ```
         nohup python python/HashNet.py --dataset cifar10 --data_root data/ --random_seed 9 --bit_list 16 32 64 128 --model AlexNet --epochs 200 --optimizer adam --lr 1e-5 
         --quantization_type swdC --quantization_alpha 0.1 --test_every 10  --save_path experiments/HashNet/cifar10_AlexNet_b64_adam  2>&1 >experiments/logs/HashNet-r9-cifar10_AlexNet_b64_adam_swdC.log &	
         ```
-* COCO
+* COCO:
         ```
         nohup python python/HashNet.py --dataset coco --data_root data/ --random_seed 9 --bit_list 16 32 64 128 --model AlexNet --epochs 200 --optimizer adam --lr 1e-5 --quantization_type swdC --quantization_alpha 0.1 --test_every 10  --save_path experiments/HashNet/coco_AlexNet_b64_adam  2>&1 >experiments/logs/HashNet-r9-coco_AlexNet_b64_adam_swdC.log &	
         ```
-* NUS-WIDE
+* NUS-WIDE:
         ```
         nohup python python/HashNet.py --dataset coco --data_root data/ --random_seed 9 --bit_list 16 32 64 128 --model AlexNet --epochs 200 --optimizer adam --lr 1e-5  --quantization_type swdC --quantization_alpha 0.1 --test_every 10  --save_path experiments/HashNet/nuswide_21_AlexNet_b64_adam  2>&1 >experiments/logs/HashNet-r9-nuswide_21_AlexNet_b64_adam_swdC.log &	
         ```        
