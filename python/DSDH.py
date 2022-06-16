@@ -18,42 +18,55 @@ from data_utils import get_data
 torch.multiprocessing.set_sharing_strategy('file_system')
 
 
-# HashNet(ICCV2017)
-# paper [HashNet: Deep Learning to Hash by Continuation](http://openaccess.thecvf.com/content_ICCV_2017/papers/Cao_HashNet_Deep_Learning_ICCV_2017_paper.pdf)
-# code [HashNet caffe and pytorch](https://github.com/thuml/HashNet)
+# DSDH(NIPS2017)
+# paper [Deep Supervised Discrete Hashing](https://papers.nips.cc/paper/6842-deep-supervised-discrete-hashing.pdf)
+# code [DSDH_PyTorch](https://github.com/TreezzZ/DSDH_PyTorch)
 
-class HashNetLoss(torch.nn.Module):
+class DSDHLoss(torch.nn.Module):
     def __init__(self, args, bit):
-        super(HashNetLoss, self).__init__()
-        self.U = torch.zeros(args.num_train, bit).float().to(args.device)
-        self.Y = torch.zeros(args.num_train, args.n_class).float().to(args.device)
-
-        self.scale = 1
+        super().__init__()
+        self.U = torch.zeros(bit, args.num_train).float().to(args.device)
+        self.B = torch.zeros(bit, args.num_train).float().to(args.device)
+        self.Y = torch.zeros(args.n_class, args.num_train).float().to(args.device)
 
     def forward(self, u, y, ind, args):
-        u = torch.tanh(self.scale * u)
 
-        self.U[ind, :] = u.data
-        self.Y[ind, :] = y.float()
+        self.U[:, ind] = u.t().data
+        self.Y[:, ind] = y.t()
 
-        similarity = (y @ self.Y.t() > 0).float()
-        dot_product = args.alpha * u @ self.U.t()
+        inner_product = u @ self.U * 0.5
+        s = (y @ self.Y > 0).float()
 
-        mask_positive = similarity.data > 0
-        mask_negative = similarity.data <= 0
+        likelihood_loss = (1 + (-inner_product.abs()).exp()).log() + inner_product.clamp(min=0) - s * inner_product
 
-        exp_loss = (1 + (-dot_product.abs()).exp()).log() + dot_product.clamp(min=0) - similarity * dot_product
+        likelihood_loss = likelihood_loss.mean()
 
-        # weight
-        S1 = mask_positive.float().sum()
-        S0 = mask_negative.float().sum()
-        S = S0 + S1
-        exp_loss[mask_positive] = exp_loss[mask_positive] * (S / S1)
-        exp_loss[mask_negative] = exp_loss[mask_negative] * (S / S0)
+        # Classification loss
+        cl_loss = (y.t() - self.W.t() @ self.B[:, ind]).pow(2).mean()
 
-        loss = exp_loss.sum() / S
+        # Regularization loss
+        reg_loss = self.W.pow(2).mean()
 
+        loss = likelihood_loss + args.mu * cl_loss + args.nu * reg_loss
         return loss
+
+    def updateBandW(self, args, bit):
+        device = args.device
+        B = self.B
+        for dit in range(args.dcc_iter):
+            # W-step
+            W = torch.inverse(B @ B.t() + args.nu / args.mu * torch.eye(bit).to(device)) @ B @ self.Y.t()
+
+            for i in range(B.shape[0]):
+                P = W @ self.Y + args.eta / args.mu * self.U
+                p = P[i, :]
+                w = W[i, :]
+                W_prime = torch.cat((W[:i, :], W[i + 1:, :]))
+                B_prime = torch.cat((B[:i, :], B[i + 1:, :]))
+                B[i, :] = (p - B_prime.t() @ W_prime @ w).sign()
+
+        self.B = B
+        self.W = W
 
 def train_val(external_logger, net, args, bit, log_lr_stats=False):
     device = args.device
@@ -65,7 +78,7 @@ def train_val(external_logger, net, args, bit, log_lr_stats=False):
 
     if not os.path.exists(args.save_path):
         os.makedirs(args.save_path)
-    prefix = f"HashNet-{args.dataset}-{bit}-{args.quantization_type}"
+    prefix = f"DSDH-{args.dataset}-{bit}-{args.quantization_type}"
     prefix = f"{prefix}-{args.quantization_alpha}-{args.random_seed}"
         
     checkpoint_file = os.path.join(args.save_path, f'{prefix}-checkpoint.pt')
@@ -75,7 +88,7 @@ def train_val(external_logger, net, args, bit, log_lr_stats=False):
     
     optimizer, scheduler = create_optimizer(args, net.parameters())
 
-    criterion = HashNetLoss(args, bit)
+    criterion = DSDHLoss(args, bit)
     
     if os.path.exists(checkpoint_file):
         print(colored(f'Train model from checkpoint {checkpoint_file}!', 'blue'))
@@ -94,10 +107,8 @@ def train_val(external_logger, net, args, bit, log_lr_stats=False):
         best_mAP = 0
 
     for epoch in range(start_epoch, args.epochs):
-        criterion.scale = (epoch // args.step_continuation + 1) ** 0.5
-
         current_time = time.strftime('%H:%M:%S', time.localtime(time.time()))
-        
+        criterion.updateBandW(args, bit)
 
         net.train()
 
@@ -127,8 +138,8 @@ def train_val(external_logger, net, args, bit, log_lr_stats=False):
             (loss + args.quantization_alpha * quantization_loss).backward()          
             optimizer.step()
             pbar.set_description(
-                '[BIT{}-{:02d}/{:02d}: {}][scale:{:0.3f},lr:{:.06f})]: l_c {:.04f} l_q {:.04f}'.format(
-                bit, epoch+1, args.epochs, current_time, criterion.scale, optimizer.param_groups[0]['lr'], 
+                '[BIT{}-{:02d}/{:02d}: {}][lr:{:.06f})]: l_c {:.04f} l_q {:.04f}'.format(
+                bit, epoch+1, args.epochs, current_time, optimizer.param_groups[0]['lr'], 
                 train_loss / len(train_loader), train_quantization_loss / len(train_loader)))
             
         pbar.close()
@@ -191,13 +202,16 @@ def train_val(external_logger, net, args, bit, log_lr_stats=False):
       
                     
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='HashNet')
+    parser = argparse.ArgumentParser(description='DSDH')
     add_base_config(parser)
     
     # Method's specific configurations
     g = parser.add_argument_group('Method Config')
-    g.add_argument('--step_continuation', default=20, type=int)
-    g.add_argument('--alpha', default=0.1, type=float)
+    g.add_argument('--alpha', default=1, type=float)
+    g.add_argument('--nu', default=1, type=int)
+    g.add_argument('--mu', default=1, type=int)
+    g.add_argument('--eta', default=55, type=int)
+    g.add_argument('--dcc_iter', default=10, type=int)
     
     args = parser.parse_args()
     setup_config_dataset(args)
