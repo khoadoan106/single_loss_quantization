@@ -1,0 +1,29 @@
+# DL
+#torch==1.6.0
+#torchvision==0.7.0
+
+# ML
+opencv-python==4.2.0.34
+scipy==1.1.0
+pandas
+numpy==1.19.4
+timm==0.5.4
+
+# NB
+jupyter==1.0.0
+notebook==5.7.8
+jupyter-client==6.1.5
+jupyter-console==6.0.0
+jupyter-core==4.6.0
+jupyter_contrib_nbextensions
+
+# Utils
+tqdm
+termcolor
+requests
+ninja
+lmdb
+neptune-client
+wandb
+lap
+colored

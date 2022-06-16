@@ -1,0 +1,23 @@
+source activate coopnets
+
+jupyter contrib nbextension install --user
+jupyter nbextension enable codefolding/main
+jupyter nbextension enable autosavetime/main
+jupyter nbextension enable code_prettify/code_prettify
+jupyter nbextension enable codefolding/main
+jupyter nbextension enable collapsible_headings/main
+jupyter nbextension enable scroll_down/main
+jupyter nbextension enable codefolding/edit
+jupyter nbextension enable execute_time/ExecuteTime
+jupyter nbextension enable nbextensions_configurator/tree_tab/main
+jupyter nbextension enable freeze/main
+
+export PATH=/usr/local/cuda-11.1/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/cuda-11.1/targets/x86_64-linux/lib:$LD_LIBRARY_PATH
+export CPATH=/usr/local/cuda-11.1/targets/x86_64-linux/include:$CPATH
+
+# let's run a simple test
+# python -c 'import tensorflow as tf; print(tf.__version__)'
+
+# start a jupyter notebook and bind port 888N where N is ID of the reserved GPU card
+jupyter notebook --ip='0.0.0.0' --port=886${1} --no-browser

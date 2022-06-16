@@ -1,3 +1,9 @@
+data/
+experiments/
+logs/
+.neptune/
+tmp/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
