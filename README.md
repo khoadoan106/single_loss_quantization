@@ -10,6 +10,11 @@ Clone the repository. The setup script to initialize and activate the environmen
 ```
 . etc/setup_env
 ```
+
+## Datasets
+The NUS-WIDE and COCO datasets can be downloaded [here](https://www.dropbox.com/sh/broof3l7cx4trv7/AADvdxX5hqevxi0YIaIX4TTca?dl=0).
+The CIFAR10 dataset can be downloaded automatically with PyTorch.
+
 ## Repository artifacts
 
 * `python`: code folder
